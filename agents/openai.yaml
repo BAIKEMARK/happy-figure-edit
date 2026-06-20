@@ -1,0 +1,3 @@
+display_name: Happy Figure Edit
+short_description: Convert images into editable SVG and PPTX artifacts.
+default_prompt: Convert this image into editable SVG and PPTX using Happy Figure Edit Expert mode.
