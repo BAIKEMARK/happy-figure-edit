@@ -7,6 +7,20 @@ description: Convert bitmap figures, screenshots, AI-generated images, or scient
 
 Use this skill to convert an existing image into editable SVG and PPTX.
 
+## First-Time Setup
+
+On first use, create the project virtual environment and install dependencies once:
+
+```bash
+cd /Users/zdl/project/happy-figure-edit
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/playwright install chromium
+```
+
+Run the mainline scripts with `.venv/bin/python`. The `playwright install chromium`
+step is required for the visual diff in `quality_report.json`.
+
 ## How This Skill Works
 
 You (the agent running this skill) are the Expert. You have vision: you can open the
