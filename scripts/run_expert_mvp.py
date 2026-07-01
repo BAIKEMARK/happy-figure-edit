@@ -33,10 +33,9 @@ from image_assets import (
 )
 
 
-PACKAGES_ROOT = Path(__file__).resolve().parents[2]
-if str(PACKAGES_ROOT) not in sys.path:
-    sys.path.insert(0, str(PACKAGES_ROOT))
 SKILL_ROOT = Path(__file__).resolve().parents[1]
+if str(SKILL_ROOT) not in sys.path:
+    sys.path.insert(0, str(SKILL_ROOT))
 
 
 @dataclass(frozen=True)
@@ -761,7 +760,7 @@ def write_editable_pptx_from_analysis(
         if generated_path.exists() and generated_path.is_file():
             generated_path.unlink()
 
-    from happyfigure_edit_skill._vendor.svg_pptx_converter.svg_to_pptx.pptx_builder import (
+    from _vendor.svg_pptx_converter.svg_to_pptx.pptx_builder import (
         create_pptx_with_native_svg,
     )
 
