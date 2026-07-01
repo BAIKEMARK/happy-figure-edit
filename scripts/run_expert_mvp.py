@@ -10,6 +10,7 @@ iteration stays focused on the final verified SVG.
 from __future__ import annotations
 
 import argparse
+import base64
 import json
 import re
 import shutil
@@ -366,6 +367,7 @@ def apply_expert_response(out_dir: Path, response_path: Path) -> Path:
 
 def package_run(run_dir: Path, out_dir: Path, basename: str | None = None) -> Path:
     pptx_path = ensure_final_pptx(run_dir)
+    figma_paths = ensure_figma_delivery(run_dir)
     refresh_packaged_run_status(run_dir, pptx_path)
     out_dir.mkdir(parents=True, exist_ok=True)
     copied: list[str] = []
@@ -401,6 +403,10 @@ def package_run(run_dir: Path, out_dir: Path, basename: str | None = None) -> Pa
     if asset_review_source.is_dir():
         shutil.copytree(asset_review_source, out_dir / "asset_review_tiles", dirs_exist_ok=True)
         copied.extend(str(path.relative_to(run_dir)) for path in sorted(asset_review_source.glob("**/*")) if path.is_file())
+    figma_source = run_dir / "figma"
+    if figma_source.is_dir():
+        shutil.copytree(figma_source, out_dir / "figma", dirs_exist_ok=True)
+        copied.extend(str(path.relative_to(run_dir)) for path in sorted(figma_source.glob("**/*")) if path.is_file())
     refs = report_relative_refs(out_dir / "report.html")
     missing_refs = [ref for ref in refs if not (out_dir / ref).exists()]
     manifest = {
@@ -416,6 +422,116 @@ def package_run(run_dir: Path, out_dir: Path, basename: str | None = None) -> Pa
     if missing_refs:
         raise ValueError(f"delivery report has missing relative refs: {missing_refs}")
     return manifest_path
+
+
+def ensure_figma_delivery(run_dir: Path) -> dict[str, Path]:
+    evidence = read_json(run_dir / "evidence.json")
+    image = evidence.get("image") if isinstance(evidence.get("image"), dict) else {}
+    width = require_int(image.get("width"), "evidence.image.width")
+    height = require_int(image.get("height"), "evidence.image.height")
+    analysis = read_json(run_dir / "element_analysis.json")
+    validate_element_analysis(analysis, width, height)
+    svg_path = run_dir / "output.svg"
+    if not svg_path.is_file():
+        raise ValueError(f"Cannot package Figma assets without final output.svg: {svg_path}")
+    svg = svg_path.read_text(encoding="utf-8").strip()
+    if not svg:
+        raise ValueError(f"Cannot package Figma assets with empty output.svg: {svg_path}")
+    validate_svg(svg, run_dir, width, height)
+
+    figma_dir = run_dir / "figma"
+    figma_dir.mkdir(parents=True, exist_ok=True)
+    figma_svg = embed_svg_assets_as_data_uris(svg, run_dir)
+    figma_svg = normalize_svg_for_figma(figma_svg)
+    figma_svg_path = figma_dir / "output.figma.svg"
+    figma_payload_path = figma_dir / "figma_payload.json"
+    figma_svg_path.write_text(figma_svg + "\n", encoding="utf-8")
+    write_json(
+        figma_payload_path,
+        {
+            "schema": "happyfigure.edit.figma_payload.v1",
+            "canvas": {"width": width, "height": height},
+            "files": {
+                "canonical_svg": "../output.svg",
+                "figma_svg": "output.figma.svg",
+                "assets_dir": "../assets",
+            },
+            "svg": svg,
+            "figma_svg": figma_svg,
+            "element_analysis": analysis,
+            "assets": figma_payload_assets(svg, run_dir, analysis),
+        },
+    )
+    return {"figma_svg": figma_svg_path, "figma_payload": figma_payload_path}
+
+
+def normalize_svg_for_figma(svg: str) -> str:
+    """Rewrite ElementTree-style ns0: prefixed SVG into default-namespace SVG.
+
+    Figma's SVG importer requires <svg xmlns="..."> with unprefixed child
+    element names (e.g. <rect>, <text>). ElementTree emits <ns0:svg
+    xmlns:ns0="..."> with every child prefixed, which Figma rejects with
+    "Unable to convert SVG". This normalizer strips the ns0 prefix.
+    """
+    svg = re.sub(r"\bxmlns:ns0=", "xmlns=", svg)
+    svg = re.sub(r"(</?)ns0:", r"\1", svg)
+    return svg
+
+
+def embed_svg_assets_as_data_uris(svg: str, run_dir: Path) -> str:
+    def replace(match: re.Match[str]) -> str:
+        attr = match.group("attr")
+        quote = match.group("quote")
+        href = match.group("href")
+        asset_path = run_dir / href
+        if not asset_path.is_file():
+            raise ValueError(f"Cannot embed missing SVG asset for Figma: {href}")
+        data = base64.b64encode(asset_path.read_bytes()).decode("ascii")
+        return f"{attr}={quote}data:{mime_type_for_asset(asset_path)};base64,{data}{quote}"
+
+    return re.sub(
+        r'(?P<attr>(?:href|xlink:href))=(?P<quote>["\'])(?P<href>assets/[^"\']+)(?P=quote)',
+        replace,
+        svg,
+    )
+
+
+def figma_payload_assets(svg: str, run_dir: Path, analysis: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    asset_refs = sorted(set(re.findall(r'(?:href|xlink:href)=["\'](assets/[^"\']+)["\']', svg)))
+    by_path: dict[str, str] = {}
+    for element in analysis.get("elements", []):
+        if not isinstance(element, dict):
+            continue
+        box_id = element.get("box_id")
+        if isinstance(box_id, str) and box_id:
+            by_path[f"assets/{box_id}.png"] = box_id
+
+    assets: dict[str, dict[str, Any]] = {}
+    for href in asset_refs:
+        asset_path = run_dir / href
+        if not asset_path.is_file():
+            raise ValueError(f"Cannot include missing Figma payload asset: {href}")
+        key = by_path.get(href) or Path(href).stem
+        assets[key] = {
+            "path": f"../{href}",
+            "mime_type": mime_type_for_asset(asset_path),
+            "byte_size": asset_path.stat().st_size,
+            "data_base64": base64.b64encode(asset_path.read_bytes()).decode("ascii"),
+        }
+    return assets
+
+
+def mime_type_for_asset(path: Path) -> str:
+    suffix = path.suffix.lower()
+    if suffix in {".jpg", ".jpeg"}:
+        return "image/jpeg"
+    if suffix == ".gif":
+        return "image/gif"
+    if suffix == ".webp":
+        return "image/webp"
+    if suffix == ".svg":
+        return "image/svg+xml"
+    return "image/png"
 
 
 def ensure_final_pptx(run_dir: Path) -> Path:
@@ -450,6 +566,8 @@ def refresh_packaged_run_status(run_dir: Path, pptx_path: Path) -> Path:
     optional_outputs = {
         "generated_assets": run_dir / "generated_assets.json",
         "crop_repair_report": run_dir / "crop_repair_report.json",
+        "figma_svg": run_dir / "figma" / "output.figma.svg",
+        "figma_payload": run_dir / "figma" / "figma_payload.json",
     }
     for key, path in optional_outputs.items():
         if path.is_file():

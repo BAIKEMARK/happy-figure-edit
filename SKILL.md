@@ -106,9 +106,14 @@ Execution discipline:
    preserves the canonical filenames used by `report.html`: `output.svg`,
    `output.pptx`, `element_overlay.png`, `rendered.png`, `diff.png`,
    `quality_summary.txt`, `quality_report.json`, `crop_repair_report.json`,
-   `run_status.json`, `review_tiles/`, and `assets/`. Do not create renamed
-   copies of `output.svg` or `output.pptx` unless the user explicitly asks for
-   duplicate filenames.
+   `run_status.json`, `review_tiles/`, and `assets/`. It also derives a Figma
+   delivery under `figma/`: `figma/output.figma.svg` embeds `assets/*` as
+   base64 data URIs so it can be dragged into Figma, and
+   `figma/figma_payload.json` bundles the canonical SVG, element analysis, and
+   base64 assets for a future importer plugin. The canonical `output.svg`
+   keeps its relative `assets/<box_id>.png` hrefs and is not modified. Do not
+   create renamed copies of `output.svg` or `output.pptx` unless the user
+   explicitly asks for duplicate filenames.
 
 ## Asset Strategy Rules
 
