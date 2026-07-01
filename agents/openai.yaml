@@ -1,3 +1,4 @@
-display_name: Happy Figure Edit
-short_description: Convert images into editable SVG and PPTX artifacts.
-default_prompt: Convert this image into editable SVG and PPTX using Happy Figure Edit Expert mode.
+interface:
+  display_name: "Happy Figure Edit"
+  short_description: "将位图图表重建为可编辑 SVG 和 PPTX 文件"
+  default_prompt: "Use $happy-figure-edit to rebuild this image as editable SVG and PPTX."

@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Happy Figure Edit Skill Expert Report</title>
+  <style>
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f6f7f9; color: #111; }
+    header { padding: 16px 20px; background: #111; color: white; }
+    main { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; padding: 16px; }
+    section { background: white; border: 1px solid #d8dce2; border-radius: 8px; overflow: hidden; }
+    h2 { margin: 0; padding: 10px 12px; font-size: 16px; border-bottom: 1px solid #d8dce2; }
+    img, object { display: block; width: 100%; height: auto; background: white; }
+    object { min-height: 220px; }
+    pre { margin: 0; padding: 12px; overflow: auto; max-height: 360px; font-size: 12px; }
+    .path { display: block; padding: 8px 12px; border-top: 1px solid #eef1f4; color: #5b6472; font-size: 12px; }
+    .missing { margin: 0; padding: 16px; color: #9a3412; background: #fff7ed; }
+    figure { margin: 0; border-top: 1px solid #eef1f4; }
+    figcaption { padding: 8px 12px; color: #4b5563; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <header><strong>Happy Figure Edit Skill Expert Report</strong></header>
+  <main>
+    <section><h2>Original Asset</h2><img src="__INPUT_ASSET__" alt="original"><code class="path">__INPUT_ASSET__</code></section>
+    <section><h2>Element Overlay</h2><img src="element_overlay.png" alt="element overlay"><code class="path">element_overlay.png</code></section>
+    <section><h2>Output SVG</h2><object data="output.svg" type="image/svg+xml"><p class="missing">Missing output.svg next to report.html.</p></object><code class="path">output.svg</code></section>
+    <section><h2>Rendered Output</h2><img src="rendered.png" alt="rendered output"><code class="path">rendered.png</code></section>
+    <section><h2>Pixel Diff</h2><img src="diff.png" alt="pixel diff"><code class="path">diff.png</code></section>
+    <section><h2>Quality Summary</h2><pre><code>__QUALITY_SUMMARY__</code></pre></section>
+    <section><h2>Asset Review Tiles</h2>__ASSET_REVIEW_TILES__</section>
+    <section><h2>Review Tiles</h2>__REVIEW_TILES__</section>
+    <section><h2>Report Dependencies</h2><pre><code>__REPORT_DEPENDENCIES__</code></pre></section>
+    <section><h2>Top Component Diffs</h2><pre><code>__TOP_DIFFS__</code></pre></section>
+    <section><h2>Actionable Diff Regions</h2><pre><code>__ACTIONABLE_DIFF_REGIONS__</code></pre></section>
+    <section><h2>Crop Repair</h2><pre><code>__CROP_REPAIR__</code></pre></section>
+    <section><h2>Status</h2><pre><code>__STATUS__</code></pre></section>
+    <section><h2>Element Analysis</h2><pre><code>__ANALYSIS__</code></pre></section>
+    <section><h2>Quality Report</h2><pre><code>__QUALITY__</code></pre></section>
+  </main>
+</body>
+</html>
